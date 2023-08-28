@@ -1,35 +1,36 @@
 pipeline {
-    agent { 
+    agent {
         docker {
-            image 'devtools.mlp.de/shared/build/build-maven:3.9.1-eclipse-temurin-17-focal-10'
+            image 'maven:3.9.0'
             args '-v /root/.m2:/root/.m2'
         }
-
     }
+    
     stages {
-        stage("Clean Up"){
+        stage('Build') {
             steps {
-                deleteDir()
+                sh 'mvn -B -DskipTests clean package'
             }
         }
-        stage("Clone Repo"){
+        stage('Test') {
             steps {
-                sh "git clone  https://github.com/jenkins-docs/simple-java-maven-app.git"
+                sh 'mvn test'
             }
-        }
-        stage("Build") {
-            steps {
-                dir("simple-java-maven-app") {
-                    sh "mvn clean install"
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
-        stage("Test") {
+        stage('Deliver') {
             steps {
-                dir("simple-java-maven-app") {
-                    sh "mvn test"
-                }
-            }          
+                sh './jenkins/scripts/deliver.sh'
+            }
+        }
+        stage('Complite') {
+            steps {
+               echo 'Job complite'
+            }
         }
     }
 }
